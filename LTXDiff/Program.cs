@@ -62,7 +62,7 @@ namespace LTXDiff
                     SlashPos = -1;
                 }
 
-                if (SlashPos * SemicolonPos < 0)
+                if (SlashPos * SemicolonPos <= 0)
                 {
                     SlashPos = SlashPos >= 0 ? SlashPos : SemicolonPos + 1;
                     SemicolonPos = SemicolonPos >= 0 ? SemicolonPos : SlashPos + 1;
