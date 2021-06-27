@@ -111,7 +111,6 @@ namespace LTXDiff
         {
             if (args.Length != 2)
             {
-                Print(args.Length.ToString());
                 System.Console.Error.WriteLine("LTXDiff [BaseDir] [ModDir]");
                 return;
             }
