@@ -8,12 +8,14 @@ namespace LTXDiff
     struct SectionKeyValueTriple
     {
         public string Section;
+        public string SectionParent;
         public string Key;
         public string Value;
 
-        public SectionKeyValueTriple(string Section, string Key, string Value)
+        public SectionKeyValueTriple(string Section, string SectionParent, string Key, string Value)
         {
             this.Section = Section;
+            this.SectionParent = SectionParent;
             this.Key = Key;
             this.Value = Value;
         }
@@ -45,11 +47,11 @@ namespace LTXDiff
             StreamReader SR = new StreamReader(File.OpenRead(Filename));
 
             string CurrentSectionName = "";
+            string CurrentSectionParent = "";
 
             while (!SR.EndOfStream)
             {
                 string CurrentLine = SR.ReadLine();
-                int CurrentLength = CurrentLine.Length;
 
                 //Clear Comments
                 int SemicolonPos = CurrentLine.IndexOf(';');
@@ -91,6 +93,12 @@ namespace LTXDiff
                 if (CurrentLine[0] == '[' && CurrentLine.Contains(']'))
                 {
                     CurrentSectionName = CurrentLine.Substring(1, CurrentLine.LastIndexOf(']') - 1).Trim();
+
+                    int ParentPos = CurrentLine.IndexOf(':');
+
+                    CurrentSectionParent = (ParentPos >= 0 && ParentPos <= CurrentLine.Length - 1) ? CurrentLine.Substring(ParentPos + 1, CurrentLine.Length - ParentPos - 1) : "";
+
+
                     continue;
                 }
 
@@ -102,7 +110,7 @@ namespace LTXDiff
                     string Key = KeyValuePair[0].Trim();
                     string Value = KeyValuePair[1].Trim();
 
-                    yield return new SectionKeyValueTriple(CurrentSectionName, Key, Value);
+                    yield return new SectionKeyValueTriple(CurrentSectionName, CurrentSectionParent, Key, Value);
                 }
             }
         }
@@ -129,6 +137,7 @@ namespace LTXDiff
 
                 bool bIsCurrentSectionListed = false;
                 string CurrentSectionName = "";
+                string CurrentSectionParent = "";
 
                 foreach (SectionKeyValueTriple CurrentModData in ModFileData)
                 {
@@ -142,6 +151,7 @@ namespace LTXDiff
 
                         bIsCurrentSectionListed = false;
                         CurrentSectionName = CurrentModData.Section;
+                        CurrentSectionParent = CurrentModData.SectionParent;
                     }
 
                     //Compare Key Value pair with basefile
@@ -175,7 +185,7 @@ namespace LTXDiff
                         if (!bIsCurrentSectionListed)
                         {
                             bIsCurrentSectionListed = true;
-                            Print((bWasSectionFound ? "![" : "[") + CurrentSectionName + "]");
+                            Print((bWasSectionFound ? "![" : "[") + CurrentSectionName + "]" + (!bWasSectionFound && CurrentSectionParent.Length > 0 ? ":" + CurrentSectionParent : ""));
                         }
 
                         Print(CurrentModData.Key + " = " + CurrentModData.Value);
