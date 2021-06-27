@@ -100,28 +100,8 @@ namespace LTXDiff
             {
                 string CurrentLine = SR.ReadLine();
 
-                //Clear Comments
-                int SemicolonPos = CurrentLine.IndexOf(';');
-                int SlashPos = CurrentLine.IndexOf('/');
-
-                if (SlashPos >= 0 && CurrentLine[SlashPos + 1] != '/')
-                {
-                    SlashPos = -1;
-                }
-
-                if (SlashPos * SemicolonPos <= 0)
-                {
-                    SlashPos = SlashPos >= 0 ? SlashPos : SemicolonPos + 1;
-                    SemicolonPos = SemicolonPos >= 0 ? SemicolonPos : SlashPos + 1;
-                }
-
-                int CommentPos = Math.Min(SlashPos, SemicolonPos);
-
-                if (CommentPos >= 0)
-                {
-                    CurrentLine = CurrentLine.Substring(0, CommentPos);
-                }
-
+                //Get rid of comments
+                CurrentLine = new Regex("^(?=;|//|$)|(^.+?(?=;|//|$))").Match(CurrentLine).Value;
                 CurrentLine = CurrentLine.Trim();
 
                 //Empty Line
@@ -152,31 +132,41 @@ namespace LTXDiff
                     {
                         yield return IncludeData;
                     }
+
+                    continue;
                 }
 
                 //Defining new section
-                if (CurrentLine[0] == '[' && CurrentLine.Contains(']'))
+                if (new Regex("^\\[[^\\[\\]:\\s]+\\](:[^\\[\\]:]+)?$").Match(CurrentLine).Success)                                         //  ^\[[^\[\]:\s]+\](:[^\[\]:]+)?$                  i.e. is it in the form "[some_section]:some_parent"
                 {
-                    CurrentSectionName = CurrentLine.Substring(1, CurrentLine.LastIndexOf(']') - 1).Trim();
-
-                    int ParentPos = CurrentLine.IndexOf(':');
-
-                    CurrentSectionParent = (ParentPos >= 0 && ParentPos <= CurrentLine.Length - 1) ? CurrentLine.Substring(ParentPos + 1, CurrentLine.Length - ParentPos - 1) : "";
-
+                    CurrentSectionName = new Regex("(?<=^\\[)[^\\[\\]:\\s]+(?=\\](:[^\\[\\]:]+)?$)").Match(CurrentLine).Value.Trim();      //  (?<=^\[)[^\[\]:\s]+(?=\](:[^\[\]:]+)?$)         i.e. extract sector name
+                    CurrentSectionParent = new Regex("(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$").Match(CurrentLine).Value.Trim();           //  (?<=^\[[^\[\]:\s]+\]:)[^\[\]:]+$                i.e. extract parent name
 
                     continue;
                 }
 
                 //Key Value Pair
-                string[] KeyValuePair = CurrentLine.Split("=");
-
-                if (KeyValuePair.Length == 2)
+                if (new Regex("^[^\\[\\]:]+(\\s+)?=(\\s+)?.+$").Match(CurrentLine).Success)                                                //   ^[^\[\]:]+(\s+)?=(\s+)?.+$                     i.e. is it in the form "some_variable = some_value"
                 {
-                    string Key = KeyValuePair[0].Trim();
-                    string Value = KeyValuePair[1].Trim();
+                    string Key = new Regex("^[^\\[\\]:]+(?=(\\s+)?=(\\s+)?.+$)").Match(CurrentLine).Value.Trim();                          //   ^[^\[\]:]+(?=(\s+)?=(\s+)?.+$)                 i.e. extract variable name
+                    string Value = new Regex("(?<=^[^\\[\\]:]+(\\s+)?=(\\s+)?).+$").Match(CurrentLine).Value.Trim();                       //   (?<=^[^\[\]:]+(\s+)?=(\s+)?).+$                i.e. extract variable value
 
                     yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, Value);
+
+                    continue;
                 }
+
+                //Key Value Pair with empty value
+                if (new Regex("^[^\\[\\]:]+((\\s+)?=)?$").Match(CurrentLine).Success)                                                       //   ^[^\[\]:]+((\s+)?=)?$                         i.e. is it in the form "some_variable =" or "some_variable"
+                {
+                    string Key = new Regex("^[^\\[\\]:]+(?=((\\s+)?=)?$)").Match(CurrentLine).Value.Trim();                                 //   ^[^\[\]:]+(?=((\s+)?=)?$)                     i.e. extract variable name
+
+                    yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, "");
+
+                    continue;
+                }
+
+                throw new Exception();
             }
         }
     }
