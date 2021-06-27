@@ -37,7 +37,7 @@ namespace LTXDiff
 
         static public IEnumerable<SectionKeyValueTriple> SectionKeyValueTripleFromFile(string Filename)
         {
-            if (Path.GetExtension(Filename) != ".ltx")
+            if (Path.GetExtension(Filename) != ".ltx" || !File.Exists(Filename))
             {
                 yield break;
             }
