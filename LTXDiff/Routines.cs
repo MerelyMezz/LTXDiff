@@ -65,7 +65,7 @@ namespace LTXDiff
             
             while (true)
             {
-                string FileNameRelativeToCurrentDir = Path.GetRelativePath(CurrentDirectory, FileName);
+                string FileNameRelativeToCurrentDir = Path.GetRelativePath(CurrentDirectory, FileName).ToLower();
 
                 HashSet<string> AllSearchedFiles = new HashSet<string>();
                 
@@ -95,7 +95,7 @@ namespace LTXDiff
                             continue;
                         }
 
-                        string IncludeString = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)");
+                        string IncludeString = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)").ToLower();
                         IncludeString = Helpers.GetRegexReplacement(IncludeString, "\\*", ".+");                        //Replace ltx wildcard with regex wildcard
                         IncludeString = Helpers.GetRegexReplacement(IncludeString, "\\\\", "\\\\");                     //Adding Regex escape sequences
 

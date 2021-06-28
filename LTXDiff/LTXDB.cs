@@ -128,13 +128,18 @@ namespace LTXDiff
                         continue;
                     }
 
-                    string IncludeFileName = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)");                   //  (?<=^#include\s+").+(?="$)                      i.e. extract include file name
-                    IncludeFileName = Path.GetFullPath(IncludeFileName, Path.GetDirectoryName(Filename));
+                    string IncludeFilePattern = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)");                   //  (?<=^#include\s+").+(?="$)                      i.e. extract include file name
 
-                    foreach (LTXData IncludeData in LTXDataFromFile(IncludeFileName, false))
+                    string[] AllMatchingIncludeFiles = Directory.GetFiles(Path.GetDirectoryName(Filename), IncludeFilePattern, SearchOption.TopDirectoryOnly);
+
+                    foreach (string IncludeFileName in AllMatchingIncludeFiles)
                     {
-                        yield return IncludeData;
+                        foreach (LTXData IncludeData in LTXDataFromFile(IncludeFileName, false))
+                        {
+                            yield return IncludeData;
+                        }
                     }
+
 
                     continue;
                 }
