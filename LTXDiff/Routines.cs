@@ -8,11 +8,14 @@ namespace LTXDiff
     {
         static public void MakeDiffFromMod(string BaseDir, string ModDir, string RootFileName)
         {
-            //Build LTX database
-            LTXDB BaseDataBase = new LTXDB(RootFileName);
-
-            //Compare and extract mod changes
             string[] AllModFileNames = Directory.GetFiles(ModDir, "*", SearchOption.AllDirectories);
+
+            MakeDiffFromMod(BaseDir, ModDir, RootFileName, AllModFileNames);
+        }
+
+        static public void MakeDiffFromMod(string BaseDir, string ModDir, string RootFileName, string[] AllModFileNames)
+        {
+            LTXDB BaseDataBase = new LTXDB(RootFileName);
 
             foreach (string Filename in AllModFileNames)
             {
@@ -113,8 +116,63 @@ namespace LTXDiff
                 CurrentDirectory = Helpers.GetUpperDirectory(CurrentDirectory);
             }
 
-            Helpers.Print(FileName);
             return FileName;
+        }
+
+        public static void DLTXify(string BaseDir, string ModDir, string ModName)
+        {
+            //Associate all mod files with a root file
+            string[] AllModFiles = Directory.GetFiles(ModDir, "*", SearchOption.AllDirectories);
+
+            Dictionary<string, List<string>> ModFilesByRootFile = new Dictionary<string, List<string>>();
+
+            foreach (string FileName in AllModFiles)
+            {
+                if (Path.GetExtension(FileName) != ".ltx")
+                {
+                    continue;
+                }
+
+                string CurrentRootFile = FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, FileName));
+
+                if (!ModFilesByRootFile.ContainsKey(CurrentRootFile))
+                {
+                    ModFilesByRootFile[CurrentRootFile] = new List<string>();
+                }
+
+                ModFilesByRootFile[CurrentRootFile].Add(FileName);
+            }
+
+            TextWriter OldConsole = Console.Out;
+
+            string ModDirUpper = Path.Combine(ModDir, "..");
+            string ModDirName = Path.GetRelativePath(ModDirUpper, ModDir);
+            string OutputModDir = Path.GetFullPath(ModDirName + "_DLTX", ModDirUpper);
+
+            foreach (string RootFileName in ModFilesByRootFile.Keys)
+            {
+                string ModFileName = "mod_" + Path.GetFileNameWithoutExtension(RootFileName) + "_" + ModName + ".ltx";
+                string ModFileDir = Path.GetFullPath(Path.GetDirectoryName(RootFileName), OutputModDir);
+                ModFileName = Path.GetFullPath(ModFileName, ModFileDir);
+
+                if (File.Exists(ModFileName))
+                {
+                    throw new Exception();
+                }
+
+                Helpers.PrintC("writing to: " + ModFileName);
+
+                //TODO: add overwriting option to prevent accidental overwriting
+                Directory.CreateDirectory(ModFileDir);
+                StreamWriter SW = new StreamWriter(File.OpenWrite(ModFileName));
+                Console.SetOut(SW);
+
+                string BaseRootFileName = Path.GetFullPath(RootFileName, BaseDir);
+
+                MakeDiffFromMod(BaseDir, ModDir, BaseRootFileName, ModFilesByRootFile[RootFileName].ToArray());
+
+                SW.Close();
+            }
         }
     }
 }

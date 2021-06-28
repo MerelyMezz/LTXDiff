@@ -34,6 +34,7 @@ namespace LTXDiff
 
             Helpers.PrintC(ProgramName + " diff [base directory] [mod directory] [relative path to root file]");
             Helpers.PrintC(ProgramName + " findroot [base directory] [mod directory] [relative path to file]");
+            Helpers.PrintC(ProgramName + " dltxify [base directory] [mod directory] [mod name]");
 
             Environment.Exit(1);
         }
@@ -65,7 +66,7 @@ namespace LTXDiff
 
             string Command = Args.GetNext();
 
-            string BaseDir, ModDir, RootFileName, FileName;
+            string BaseDir, ModDir, RootFileName, FileName, ModName;
 
             switch (Command)
             {
@@ -92,7 +93,28 @@ namespace LTXDiff
                                             VerifyValidPath(ModDir, false) &&
                                             VerifyValidPath(FullFileName, true));
 
-                    Routines.FindRootFile(BaseDir, ModDir, FileName);
+                    Helpers.Print(Routines.FindRootFile(BaseDir, ModDir, FileName));
+
+                    break;
+
+                case "dltxify":
+                    BaseDir = Helpers.FullPath(Args.GetNext());
+                    ModDir = Helpers.FullPath(Args.GetNext());
+                    ModName = Args.GetNext();
+
+                    bool bIsModNameAppropriate = true;
+
+                    if (!Helpers.IsRegexMatching(ModName, "^[\\w\\d_]+$"))
+                    {
+                        Helpers.PrintC("Mod name may only contain letters, digits and underscores");
+                        bIsModNameAppropriate = false;
+                    }
+
+                    ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
+                                            VerifyValidPath(ModDir, false) &&
+                                            bIsModNameAppropriate);
+
+                    Routines.DLTXify(BaseDir, ModDir, ModName);
 
                     break;
                 default:
