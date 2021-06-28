@@ -1,83 +1,102 @@
 ﻿using System;
 
-using System.Collections.Generic;
 using System.IO;
 
 namespace LTXDiff
 {
-    class Program
+    class ArgumentTracker
     {
-        static public string FullPath(string Input)
+        string[] args;
+        int CurrentArg = 0;
+
+        public ArgumentTracker(string[] args)
         {
-            if (Path.IsPathFullyQualified(Input))
+            this.args = args;
+        }
+
+        public string GetNext()
+        {
+            if (args.Length <= CurrentArg)
             {
-                return Input;
+                Program.PrintManual();
             }
 
-            return Path.GetFullPath(Input, Directory.GetCurrentDirectory());
+            CurrentArg++;
+            return args[CurrentArg - 1];
         }
-        static void Print(string Input)
+    }
+
+    class Program
+    {
+        public static void PrintManual()
         {
-            System.Console.WriteLine(Input);
+            string ProgramName = "LTXDiff";
+
+            Helpers.PrintC(ProgramName + " diff [base directory] [mod directory] [relative path to root file]");
+
+            Environment.Exit(1);
+        }
+
+        static bool VerifyValidPath(string Path, bool bIsFile)
+        {
+            string PathObjectName = bIsFile ? "File" : "Directory";
+
+            if ((bIsFile && !File.Exists(Path)) || (!bIsFile && !Directory.Exists(Path)))
+            {
+                Helpers.PrintC(PathObjectName + " " + Path + " doesn't exist.");
+                return false;
+            }
+
+            return true;
+        }
+
+        static void ContinueExecutionIfTrue(bool bContinue)
+        {
+            if (!bContinue)
+            {
+                Environment.Exit(1);
+            }
         }
 
         static void Main(string[] args)
         {
-            if (args.Length != 3)
+            ArgumentTracker Args = new ArgumentTracker(args);
+
+            string Command = Args.GetNext();
+
+            string BaseDir, ModDir, RootFileName, FileName;
+
+            switch (Command)
             {
-                System.Console.Error.WriteLine("LTXDiff [BaseDir] [ModDir] [RootFile]");
-                return;
-            }
+                case "diff":
+                    BaseDir = Helpers.FullPath(Args.GetNext());
+                    ModDir = Helpers.FullPath(Args.GetNext());
+                    RootFileName = Path.GetFullPath(Args.GetNext(), BaseDir);
 
-            string BaseDir = FullPath(args[0]);
-            string ModDir = FullPath(args[1]);
-            string RootFileName = Path.GetFullPath(args[2], BaseDir);
+                    ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
+                                            VerifyValidPath(ModDir, false) &&
+                                            VerifyValidPath(RootFileName, true));
 
-            //Build LTX database
-            LTXDB BaseDataBase = new LTXDB(RootFileName);
+                    Routines.MakeDiffFromMod(BaseDir, ModDir, RootFileName);
 
-            //Compare and extract mod changes
-            string[] AllModFileNames = System.IO.Directory.GetFiles(ModDir, "*", SearchOption.AllDirectories);
+                    break;
+                case "findroot":
+                    BaseDir = Helpers.FullPath(Args.GetNext());
+                    ModDir = Helpers.FullPath(Args.GetNext());
+                    FileName = Helpers.GetRegexReplacement(Args.GetNext(), "^\\\\", "");
 
-            foreach (string Filename in AllModFileNames)
-            {
-                IEnumerable<LTXData> ModFileData = LTXDB.LTXDataFromFile(Filename);
+                    string FullFileName = Helpers.FindFileFromMod(FileName, BaseDir, ModDir);
 
-                string RelativePath = Path.GetRelativePath(ModDir, Filename);
-                string BaseDirFilename = Path.GetFullPath(RelativePath, BaseDir);
+                    ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
+                                            VerifyValidPath(ModDir, false) &&
+                                            VerifyValidPath(FullFileName, true));
 
-                bool bIsCurrentSectionListed = false;
-                string CurrentSectionName = "";
-                string CurrentSectionParent = "";
+                    Routines.FindRootFile(BaseDir, ModDir, FileName);
 
-                foreach (LTXData CurrentModData in ModFileData)
-                {
-                    //Update section if need be
-                    if (CurrentSectionName != CurrentModData.Section)
-                    {
-                        if (bIsCurrentSectionListed)
-                        {
-                            Print("");
-                        }
-
-                        bIsCurrentSectionListed = false;
-                        CurrentSectionName = CurrentModData.Section;
-                        CurrentSectionParent = CurrentModData.SectionParent;
-                    }
-
-                    LTXDiffResult Result = BaseDataBase.GetDiff(CurrentModData);
-
-                    if (!Result.bWasMatchFound || Result.bWasDifferenceFound)
-                    {
-                        if (!bIsCurrentSectionListed)
-                        {
-                            bIsCurrentSectionListed = true;
-                            Print((Result.bWasSectionFound ? "![" : "[") + CurrentSectionName + "]" + (!Result.bWasSectionFound && CurrentSectionParent.Length > 0 ? ":" + CurrentSectionParent : ""));
-                        }
-
-                        Print(CurrentModData.Key + " = " + CurrentModData.Value);
-                    }
-                }
+                    break;
+                default:
+                    PrintManual();
+                    break;
             }
         }
     }
