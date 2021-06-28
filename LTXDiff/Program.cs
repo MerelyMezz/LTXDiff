@@ -5,22 +5,6 @@ using System.IO;
 
 namespace LTXDiff
 {
-    struct LTXData
-    {
-        public string Section;
-        public string SectionParent;
-        public string Key;
-        public string Value;
-
-        public LTXData(string Section, string SectionParent, string Key, string Value)
-        {
-            this.Section = Section;
-            this.SectionParent = SectionParent;
-            this.Key = Key;
-            this.Value = Value;
-        }
-    }
-
     class Program
     {
         static public string FullPath(string Input)
