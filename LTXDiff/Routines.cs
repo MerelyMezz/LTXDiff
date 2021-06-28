@@ -160,8 +160,6 @@ namespace LTXDiff
                     throw new Exception();
                 }
 
-                Helpers.PrintC("writing to: " + ModFileName);
-
                 //TODO: add overwriting option to prevent accidental overwriting
                 Directory.CreateDirectory(ModFileDir);
                 StreamWriter SW = new StreamWriter(File.OpenWrite(ModFileName));

@@ -54,7 +54,7 @@ namespace LTXDiff
         {
             if (!File.Exists(RootFilePath))
             {
-                throw new Exception();
+                return;
             }
 
             IEnumerable<LTXData> FileData = LTXDataFromFile(RootFilePath, false);

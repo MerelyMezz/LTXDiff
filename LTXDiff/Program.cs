@@ -64,7 +64,7 @@ namespace LTXDiff
         {
             ArgumentTracker Args = new ArgumentTracker(args);
 
-            string Command = Args.GetNext();
+            string Command = Args.GetNext().ToLower();
 
             string BaseDir, ModDir, RootFileName, FileName, ModName;
 
