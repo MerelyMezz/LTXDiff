@@ -33,6 +33,7 @@ namespace LTXDiff
             string ProgramName = "LTXDiff";
 
             Helpers.PrintC(ProgramName + " diff [base directory] [mod directory] [relative path to root file]");
+            Helpers.PrintC(ProgramName + " findroot [base directory] [mod directory] [relative path to file]");
 
             Environment.Exit(1);
         }
