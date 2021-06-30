@@ -38,6 +38,12 @@ namespace LTXDiff
 
                     if (!Result.bWasMatchFound)
                     {
+                        if (!bIsCurrentSectionListed)
+                        {
+                            bIsCurrentSectionListed = true;
+                            Helpers.Print("![" + Section + "]");
+                        }
+
                         Helpers.Print("!" + CurrentBaseData.Key);
                     }
                 }
