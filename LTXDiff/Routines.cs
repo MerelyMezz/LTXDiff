@@ -127,7 +127,7 @@ namespace LTXDiff
             //Associate all mod files with a root file
             string[] AllModFiles = Directory.GetFiles(ModDir, "*", SearchOption.AllDirectories);
 
-            Dictionary<string, List<string>> ModFilesByRootFile = new Dictionary<string, List<string>>();
+            HashSet<string> AllRootFiles = new HashSet<string>();
 
             foreach (string FileName in AllModFiles)
             {
@@ -136,14 +136,7 @@ namespace LTXDiff
                     continue;
                 }
 
-                string CurrentRootFile = FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, FileName));
-
-                if (!ModFilesByRootFile.ContainsKey(CurrentRootFile))
-                {
-                    ModFilesByRootFile[CurrentRootFile] = new List<string>();
-                }
-
-                ModFilesByRootFile[CurrentRootFile].Add(FileName);
+                AllRootFiles.Add(FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, FileName)));
             }
 
             TextWriter OldConsole = Console.Out;
@@ -152,7 +145,7 @@ namespace LTXDiff
             string ModDirName = Path.GetRelativePath(ModDirUpper, ModDir);
             string OutputModDir = Path.GetFullPath(ModDirName + "_DLTX", ModDirUpper);
 
-            foreach (string RootFileName in ModFilesByRootFile.Keys)
+            foreach (string RootFileName in AllRootFiles)
             {
                 string ModFileName = "mod_" + Path.GetFileNameWithoutExtension(RootFileName) + "_" + ModName + ".ltx";
                 string ModFileDir = Path.GetFullPath(Path.GetDirectoryName(RootFileName), OutputModDir);
