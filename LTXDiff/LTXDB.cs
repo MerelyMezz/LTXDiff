@@ -118,17 +118,16 @@ namespace LTXDiff
                 string CurrentLine = SR.ReadLine();
 
                 //Get rid of comments
-                CurrentLine = Helpers.GetRegexMatch(CurrentLine, "^(?=;|//|$)|(^.+?(?=;|//|$))").Trim();                            //  ^(?=;|//|$)|(^.+?(?=;|//|$))                    i.e. remove everything after and including ; and //
-
+                CurrentLine = Helpers.GetRegexMatch(CurrentLine, "^(?=;|//|$)|(^.+?(?=;|//|$))").Trim();                            //i.e. remove everything after and including ; and //
                 //Including other LTX file
-                if (Helpers.IsRegexMatching(CurrentLine, "^#include\\s+\".+\"$"))                                                   //  ^#include\s+".+"$                               i.e. is it in the form "#include "somefile.ltx""
+                if (Helpers.IsRegexMatching(CurrentLine, "^#include\\s+\".+\"$"))                                                   //i.e. is it in the form "#include "somefile.ltx""
                 {
                     if (bIgnoreIncludes)
                     {
                         continue;
                     }
 
-                    string IncludeFilePattern = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)");                   //  (?<=^#include\s+").+(?="$)                      i.e. extract include file name
+                    string IncludeFilePattern = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)");                //i.e. extract include file name
 
                     string[] AllMatchingIncludeFiles = Directory.GetFiles(Path.GetDirectoryName(Filename), IncludeFilePattern, SearchOption.TopDirectoryOnly);
 
@@ -145,19 +144,29 @@ namespace LTXDiff
                 }
 
                 //Defining new section
-                if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]:\\s]+\\](:[^\\[\\]:]+)?$"))                                  //  ^\[[^\[\]:\s]+\](:[^\[\]:]+)?$                  i.e. is it in the form "[some_section]:some_parent"
+                if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]:\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
                 {
-                    CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]:\\s]+(?=\\](:[^\\[\\]:]+)?$)");      //  (?<=^\[)[^\[\]:\s]+(?=\](:[^\[\]:]+)?$)         i.e. extract sector name
-                    CurrentSectionParent = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$");           //  (?<=^\[[^\[\]:\s]+\]:)[^\[\]:]+$                i.e. extract parent name
+                    CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]:\\s]+(?=\\](:[^\\[\\]:]+)?$)");     //i.e. extract sector name
+                    CurrentSectionParent = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
 
                     continue;
                 }
 
                 //Key Value Pair
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+(\\s+)?=(\\s+)?.+$"))                                         //   ^[^\[\]:]+(\s+)?=(\s+)?.+$                     i.e. is it in the form "some_variable = some_value"
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+(\\s+)?=(\\s+)?[^\"]+$"))                                    //i.e. is it in the form "some_variable = some_value"
                 {
-                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=(\\s+)?=(\\s+)?.+$)");                          //   ^[^\[\]:]+(?=(\s+)?=(\s+)?.+$)                 i.e. extract variable name
-                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:]+(\\s+)?=(\\s+)?).+$");                       //   (?<=^[^\[\]:]+(\s+)?=(\s+)?).+$                i.e. extract variable value
+                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=(\\s+)?=(\\s+)?.+$)");                         //i.e. extract variable name
+                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:]+(\\s+)?=(\\s+)?).+$");                      //i.e. extract variable value
+
+                    yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, Value);
+
+                    continue;
+                }
+
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\"[^\"]+\"$"))                              //i.e. is it in the form "some_variable = "some_value""
+                {
+                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:\"]+[^\\s](?=(\\s+)?=(\\s+)?\"[^\"]+\"$)");         // i.e. extract variable name
+                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\")[^\"]+(?=\"$)");        // i.e. extract variable value
 
                     yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, Value);
 
@@ -165,14 +174,20 @@ namespace LTXDiff
                 }
 
                 //Key Value Pair with empty value
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+((\\s+)?=)?$"))                                                //   ^[^\[\]:]+((\s+)?=)?$                         i.e. is it in the form "some_variable =" or "some_variable"
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+((\\s+)?=)?$"))                                              //i.e. is it in the form "some_variable =" or "some_variable"
                 {
-                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=((\\s+)?=)?$)");                                 //   ^[^\[\]:]+(?=((\s+)?=)?$)                     i.e. extract variable name
+                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=((\\s+)?=)?$)");                               //i.e. extract variable name
 
                     yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, "");
 
                     continue;
                 }
+
+                //TODO: make all this regex stuff easier to read and maintain somehow
+
+                //TODO: multiline variable values surrounded by quotes
+                //as far as I can tell the game doesn't seem to actually make use of it, but code for it is present
+                //in the engine, so we should support it
 
                 //Empty Line
                 if (CurrentLine.Length == 0)
