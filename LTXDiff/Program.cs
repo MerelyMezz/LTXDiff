@@ -87,11 +87,17 @@ namespace LTXDiff
                     ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     FileName = Helpers.GetRegexReplacement(Args.GetNext(), "^\\\\", "");
 
-                    string FullFileName = Helpers.FindFileFromMod(FileName, BaseDir, ModDir);
+                    string FullFileNameBase = Path.GetFullPath(FileName, BaseDir);
+                    string FullFileNameMod = Path.GetFullPath(FileName, ModDir);
+
+                    if (!File.Exists(FullFileNameBase) && !File.Exists(FullFileNameMod))
+                    {
+                        Helpers.PrintC("File " + FileName + " doesn't exist.");
+                        return;
+                    }
 
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
-                                            VerifyValidPath(ModDir, false) &&
-                                            VerifyValidPath(FullFileName, true));
+                                            VerifyValidPath(ModDir, false));
 
                     Helpers.Print(Routines.FindRootFile(BaseDir, ModDir, FileName));
 
