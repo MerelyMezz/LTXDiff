@@ -71,8 +71,8 @@ namespace LTXDiff
             switch (Command)
             {
                 case "diff":
-                    BaseDir = Helpers.FullPath(Args.GetNext());
-                    ModDir = Helpers.FullPath(Args.GetNext());
+                    BaseDir = Helpers.ParseCommandLinePath(Args.GetNext());
+                    ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     RootFileName = Path.GetFullPath(Args.GetNext(), BaseDir);
 
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
@@ -83,8 +83,8 @@ namespace LTXDiff
 
                     break;
                 case "findroot":
-                    BaseDir = Helpers.FullPath(Args.GetNext());
-                    ModDir = Helpers.FullPath(Args.GetNext());
+                    BaseDir = Helpers.ParseCommandLinePath(Args.GetNext());
+                    ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     FileName = Helpers.GetRegexReplacement(Args.GetNext(), "^\\\\", "");
 
                     string FullFileName = Helpers.FindFileFromMod(FileName, BaseDir, ModDir);
@@ -98,8 +98,8 @@ namespace LTXDiff
                     break;
 
                 case "dltxify":
-                    BaseDir = Helpers.FullPath(Args.GetNext());
-                    ModDir = Helpers.FullPath(Args.GetNext());
+                    BaseDir = Helpers.ParseCommandLinePath(Args.GetNext());
+                    ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     ModName = Args.GetNext();
 
                     bool bIsModNameAppropriate = true;

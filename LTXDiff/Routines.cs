@@ -15,34 +15,16 @@ namespace LTXDiff
 
         static public void MakeDiffFromMod(string BaseDir, string ModDir, string RootFileName, string[] AllModFileNames)
         {
-            LTXDB BaseDataBase = new LTXDB(RootFileName);
+            LTXDB BaseDataBase = new LTXDB(RootFileName, BaseDir);
+            LTXDB ModDataBase = new LTXDB(RootFileName, BaseDir, ModDir);
 
-            foreach (string Filename in AllModFileNames)
+            foreach (string Section in ModDataBase.GetSections())
             {
-                IEnumerable<LTXData> ModFileData = LTXDB.LTXDataFromFile(Filename);
-
-                string RelativePath = Path.GetRelativePath(ModDir, Filename);
-                string BaseDirFilename = Path.GetFullPath(RelativePath, BaseDir);
-
+                string Parent = ModDataBase.GetSectionParent(Section);
                 bool bIsCurrentSectionListed = false;
-                string CurrentSectionName = "";
-                string CurrentSectionParent = "";
 
-                foreach (LTXData CurrentModData in ModFileData)
+                foreach (LTXData CurrentModData in ModDataBase.GetLTXData(Section))
                 {
-                    //Update section if need be
-                    if (CurrentSectionName != CurrentModData.Section)
-                    {
-                        if (bIsCurrentSectionListed)
-                        {
-                            Helpers.Print("");
-                        }
-
-                        bIsCurrentSectionListed = false;
-                        CurrentSectionName = CurrentModData.Section;
-                        CurrentSectionParent = CurrentModData.SectionParent;
-                    }
-
                     LTXDiffResult Result = BaseDataBase.GetDiff(CurrentModData);
 
                     if (!Result.bWasMatchFound || Result.bWasDifferenceFound)
@@ -50,11 +32,52 @@ namespace LTXDiff
                         if (!bIsCurrentSectionListed)
                         {
                             bIsCurrentSectionListed = true;
-                            Helpers.Print((Result.bWasSectionFound ? "![" : "[") + CurrentSectionName + "]" + (!Result.bWasSectionFound && CurrentSectionParent.Length > 0 ? ":" + CurrentSectionParent : ""));
+                            Helpers.Print((Result.bWasSectionFound ? "![" : "[") + Section + "]" + (!Result.bWasSectionFound && Parent.Length > 0 ? ":" + Parent : ""));
                         }
 
                         Helpers.Print(CurrentModData.Key + " = " + CurrentModData.Value);
                     }
+                }
+
+                foreach (LTXData CurrentBaseData in BaseDataBase.GetLTXData(Section))
+                {
+                    LTXDiffResult Result = ModDataBase.GetDiff(CurrentBaseData);
+
+                    if (!Result.bWasMatchFound)
+                    {
+                        Helpers.Print("!" + CurrentBaseData.Key);
+                    }
+                }
+
+                if (bIsCurrentSectionListed)
+                {
+                    Helpers.Print("");
+                }
+            }
+
+            foreach (string Section in BaseDataBase.GetSections())
+            {
+                if (ModDataBase.HasSection(Section))
+                {
+                    continue;
+                }
+
+                bool bIsCurrentSectionListed = false;
+
+                foreach (LTXData CurrentBaseData in BaseDataBase.GetLTXData(Section))
+                {
+                    if (!bIsCurrentSectionListed)
+                    {
+                        bIsCurrentSectionListed = true;
+                        Helpers.Print("!![" + Section + "]");
+                    }
+
+                    Helpers.Print("!" + CurrentBaseData.Key);
+                }
+
+                if (bIsCurrentSectionListed)
+                {
+                    Helpers.Print("");
                 }
             }
         }
@@ -67,20 +90,7 @@ namespace LTXDiff
             {
                 string FileNameRelativeToCurrentDir = Path.GetRelativePath(CurrentDirectory, FileName).ToLower();
 
-                HashSet<string> AllSearchedFiles = new HashSet<string>();
-                
-                Action<string> AddFilesToSet = DirName =>
-                {
-                    string[] FileNameArray = Directory.GetFiles(Path.GetFullPath(CurrentDirectory, DirName), "*", SearchOption.TopDirectoryOnly);
-
-                    foreach (string File in FileNameArray)
-                    {
-                        AllSearchedFiles.Add(Helpers.FindFileFromMod(File, BaseDir, ModDir));
-                    }
-                };
-
-                AddFilesToSet(BaseDir);
-                AddFilesToSet(ModDir);
+                HashSet<string> AllSearchedFiles = Helpers.GetFileNamesFromDirs(CurrentDirectory, "*", BaseDir, ModDir);
 
                 foreach (string CurrentFileName in AllSearchedFiles)
                 {

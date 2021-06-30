@@ -48,16 +48,21 @@ namespace LTXDiff
     class LTXDB
     {
         Dictionary<string, string> SectionParents = new Dictionary<string, string>();
-        Dictionary<LTXIdentifier, string> VariableValues = new Dictionary<LTXIdentifier, string>();
+        Dictionary<string, Dictionary<string, string>> VariablesBySections = new Dictionary<string, Dictionary<string, string>>();
 
-        public LTXDB(string RootFilePath)
+        public LTXDB(string RootFilePath, string BaseDir, string ModDir = null)
         {
+            if (BaseDir == null)
+            {
+                throw new Exception();
+            }
+
             if (!File.Exists(RootFilePath))
             {
                 return;
             }
 
-            IEnumerable<LTXData> FileData = LTXDataFromFile(RootFilePath, false);
+            IEnumerable<LTXData> FileData = LTXDataFromFile(RootFilePath, false, BaseDir, ModDir);
 
             foreach (LTXData Data in FileData)
             {
@@ -75,34 +80,71 @@ namespace LTXDiff
                 }
 
                 //Record Value
-                VariableValues[Data.GetIdentifier()] = Data.Value;
+                if (!VariablesBySections.ContainsKey(Data.Section))
+                {
+                    VariablesBySections.Add(Data.Section, new Dictionary<string, string>());
+                }
+
+                VariablesBySections[Data.Section][Data.Key] = Data.Value;
             }
         }
 
         public LTXDiffResult GetDiff(LTXData InputData)
         {
-            LTXIdentifier Identifier = InputData.GetIdentifier();
             LTXDiffResult Result;
-            Result.bWasSectionFound = SectionParents.ContainsKey(InputData.Section);
-            Result.bWasMatchFound = VariableValues.ContainsKey(Identifier);
-
-            if (Result.bWasMatchFound)
-            {
-                string Value;
-                VariableValues.TryGetValue(Identifier, out Value);
-
-                Result.bWasDifferenceFound = Value != InputData.Value;
-            }
-            else
-            {
-                Result.bWasDifferenceFound = false;
-            }
+            Result.bWasSectionFound = VariablesBySections.ContainsKey(InputData.Section);
+            Result.bWasMatchFound = Result.bWasSectionFound && VariablesBySections[InputData.Section].ContainsKey(InputData.Key);
+            Result.bWasDifferenceFound = Result.bWasMatchFound ? VariablesBySections[InputData.Section][InputData.Key] != InputData.Value : false;
 
             return Result;
         }
 
-        public static IEnumerable<LTXData> LTXDataFromFile(string Filename, bool bIgnoreIncludes = true)
+        public bool HasSection(string Section)
         {
+            return VariablesBySections.ContainsKey(Section);
+        }
+
+        public string GetSectionParent(string Section)
+        {
+            return SectionParents[Section];
+        }
+
+        public IEnumerable<string> GetSections()
+        {
+            foreach (string Section in VariablesBySections.Keys)
+            {
+                yield return Section;
+            }
+        }
+
+        public IEnumerable<LTXData> GetLTXData(string Section)
+        {
+            if (!VariablesBySections.ContainsKey(Section))
+            {
+                yield break;
+            }
+
+            Dictionary<string, string> Variables = VariablesBySections[Section];
+
+            foreach (string Key in Variables.Keys)
+            {
+                yield return new LTXData(Section, SectionParents[Section], Key, Variables[Key]);
+            }
+        }
+
+        public static IEnumerable<LTXData> LTXDataFromFile(string Filename, bool bIgnoreIncludes = true, string BaseDir = null, string ModDir = null)
+        {
+
+            if (ModDir != null && BaseDir == null)
+            {
+                throw new Exception();
+            }
+
+            BaseDir = BaseDir == null ? Path.GetDirectoryName(Filename) : BaseDir;
+
+            Filename = Helpers.FindFileFromMod(Filename, BaseDir, ModDir);
+            string FileDir = Helpers.GetRelativePath(BaseDir, ModDir, Path.GetDirectoryName(Filename));
+
             if (Path.GetExtension(Filename) != ".ltx" || !File.Exists(Filename))
             {
                 yield break;
@@ -129,16 +171,15 @@ namespace LTXDiff
 
                     string IncludeFilePattern = Helpers.GetRegexMatch(CurrentLine, "(?<=^#include\\s+\").+(?=\"$)");                //i.e. extract include file name
 
-                    string[] AllMatchingIncludeFiles = Directory.GetFiles(Path.GetDirectoryName(Filename), IncludeFilePattern, SearchOption.TopDirectoryOnly);
+                    HashSet<string> AllMatchingIncludeFiles = Helpers.GetFileNamesFromDirs(FileDir, IncludeFilePattern, BaseDir, ModDir);
 
                     foreach (string IncludeFileName in AllMatchingIncludeFiles)
                     {
-                        foreach (LTXData IncludeData in LTXDataFromFile(IncludeFileName, false))
+                        foreach (LTXData IncludeData in LTXDataFromFile(IncludeFileName, false, BaseDir, ModDir))
                         {
                             yield return IncludeData;
                         }
                     }
-
 
                     continue;
                 }
