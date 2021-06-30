@@ -8,13 +8,6 @@ namespace LTXDiff
     {
         static public void MakeDiffFromMod(string BaseDir, string ModDir, string RootFileName)
         {
-            string[] AllModFileNames = Directory.GetFiles(ModDir, "*", SearchOption.AllDirectories);
-
-            MakeDiffFromMod(BaseDir, ModDir, RootFileName, AllModFileNames);
-        }
-
-        static public void MakeDiffFromMod(string BaseDir, string ModDir, string RootFileName, string[] AllModFileNames)
-        {
             LTXDB BaseDataBase = new LTXDB(RootFileName, BaseDir);
             LTXDB ModDataBase = new LTXDB(RootFileName, BaseDir, ModDir);
 
@@ -177,7 +170,7 @@ namespace LTXDiff
 
                 string BaseRootFileName = Path.GetFullPath(RootFileName, BaseDir);
 
-                MakeDiffFromMod(BaseDir, ModDir, BaseRootFileName, ModFilesByRootFile[RootFileName].ToArray());
+                MakeDiffFromMod(BaseDir, ModDir, BaseRootFileName);
 
                 SW.Close();
             }
