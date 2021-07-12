@@ -113,6 +113,11 @@ namespace LTXDiff
 
         public HashSet<string> GetSectionParent(string Section)
         {
+            if (!SectionParents.ContainsKey(Section))
+            {
+                return null;
+            }
+
             return SectionParents[Section];
         }
 
