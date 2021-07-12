@@ -11,10 +11,76 @@ namespace LTXDiff
             LTXDB BaseDataBase = new LTXDB(RootFileName, BaseDir);
             LTXDB ModDataBase = new LTXDB(RootFileName, BaseDir, ModDir);
 
+
             foreach (string Section in ModDataBase.GetSections())
             {
-                string Parent = ModDataBase.GetSectionParent(Section);
                 bool bIsCurrentSectionListed = false;
+
+                HashSet<string> BaseParents = BaseDataBase.GetSectionParent(Section);
+                HashSet<string> ModParents = ModDataBase.GetSectionParent(Section);
+
+                Action PrintSectionHeader = () =>
+                {
+                    Action<bool, HashSet<string>> PrintHeader = (bOverrideFlag, Parents) =>
+                    {
+                        string ParentString = "";
+                        bool bFirstEntry = true;
+
+                        if (Parents != null && Parents.Count > 0)
+                        {
+                            ParentString = ":";
+
+                            foreach (string CurrentParent in Parents)
+                            {
+                                ParentString += (!bFirstEntry ? ", " : "") + CurrentParent;
+                                bFirstEntry = false;
+                            }
+                        }
+
+                        Helpers.Print((bOverrideFlag ? "![" : "[") + Section + "]" + ParentString);
+                    };
+
+                    if (!bIsCurrentSectionListed)
+                    {
+                        bIsCurrentSectionListed = true;
+
+                        if (!BaseDataBase.HasSection(Section))
+                        {
+                            PrintHeader(false, ModParents);
+                            return;
+                        }
+
+                        bool bHasModifiedParents = !Helpers.AreSetsEqual<string>(BaseParents, ModParents);
+
+                        HashSet<string> OutputParents = new HashSet<string>();
+
+                        if (bHasModifiedParents)
+                        {
+                            foreach(string CurrentModParent in ModParents)
+                            {
+                                if (!BaseParents.Contains(CurrentModParent))
+                                {
+                                    OutputParents.Add(CurrentModParent);
+                                }
+                            }
+
+                            foreach (string CurrentBaseParent in BaseParents)
+                            {
+                                if (!ModParents.Contains(CurrentBaseParent))
+                                {
+                                    OutputParents.Add("!" + CurrentBaseParent);
+                                }
+                            }
+                        }
+
+                        PrintHeader(true, OutputParents);
+                    }
+                };
+
+                if (!Helpers.AreSetsEqual<string>(BaseParents, ModParents))
+                {
+                    PrintSectionHeader();
+                }
 
                 foreach (LTXData CurrentModData in ModDataBase.GetLTXData(Section))
                 {
@@ -22,11 +88,7 @@ namespace LTXDiff
 
                     if (!Result.bWasMatchFound || Result.bWasDifferenceFound)
                     {
-                        if (!bIsCurrentSectionListed)
-                        {
-                            bIsCurrentSectionListed = true;
-                            Helpers.Print((Result.bWasSectionFound ? "![" : "[") + Section + "]" + (!Result.bWasSectionFound && Parent.Length > 0 ? ":" + Parent : ""));
-                        }
+                        PrintSectionHeader();
 
                         Helpers.Print(CurrentModData.Key + " = " + CurrentModData.Value);
                     }
@@ -38,11 +100,7 @@ namespace LTXDiff
 
                     if (!Result.bWasMatchFound)
                     {
-                        if (!bIsCurrentSectionListed)
-                        {
-                            bIsCurrentSectionListed = true;
-                            Helpers.Print("![" + Section + "]");
-                        }
+                        PrintSectionHeader();
 
                         Helpers.Print("!" + CurrentBaseData.Key);
                     }
@@ -54,6 +112,7 @@ namespace LTXDiff
                 }
             }
 
+            //Completely deleted sections
             foreach (string Section in BaseDataBase.GetSections())
             {
                 if (ModDataBase.HasSection(Section))

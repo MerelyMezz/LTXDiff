@@ -9,16 +9,18 @@ namespace LTXDiff
     struct LTXData
     {
         public string Section;
-        public string SectionParent;
+        public HashSet<string> SectionParent;
         public string Key;
         public string Value;
+        public bool bIsSectionOnly;
 
-        public LTXData(string Section, string SectionParent, string Key, string Value)
+        public LTXData(string Section, HashSet<string> SectionParent, string Key, string Value, bool bIsSectionOnly = false)
         {
             this.Section = Section;
             this.SectionParent = SectionParent;
             this.Key = Key;
             this.Value = Value;
+            this.bIsSectionOnly = bIsSectionOnly;
         }
 
         public LTXIdentifier GetIdentifier()
@@ -47,7 +49,7 @@ namespace LTXDiff
 
     class LTXDB
     {
-        Dictionary<string, string> SectionParents = new Dictionary<string, string>();
+        Dictionary<string, HashSet<string>> SectionParents = new Dictionary<string, HashSet<string>>();
         Dictionary<string, Dictionary<string, string>> VariablesBySections = new Dictionary<string, Dictionary<string, string>>();
 
         public LTXDB(string RootFilePath, string BaseDir, string ModDir = null)
@@ -67,7 +69,7 @@ namespace LTXDiff
             foreach (LTXData Data in FileData)
             {
                 //Record Section Parent
-                string CurrentSectionParent;
+                HashSet<string> CurrentSectionParent;
                 bool bHasSectionParent = SectionParents.TryGetValue(Data.Section, out CurrentSectionParent);
 
                 if (!bHasSectionParent)
@@ -83,6 +85,11 @@ namespace LTXDiff
                 if (!VariablesBySections.ContainsKey(Data.Section))
                 {
                     VariablesBySections.Add(Data.Section, new Dictionary<string, string>());
+                }
+
+                if (Data.bIsSectionOnly)
+                {
+                    continue;
                 }
 
                 VariablesBySections[Data.Section][Data.Key] = Data.Value;
@@ -104,7 +111,7 @@ namespace LTXDiff
             return VariablesBySections.ContainsKey(Section);
         }
 
-        public string GetSectionParent(string Section)
+        public HashSet<string> GetSectionParent(string Section)
         {
             return SectionParents[Section];
         }
@@ -153,14 +160,49 @@ namespace LTXDiff
             StreamReader SR = new StreamReader(File.OpenRead(Filename));
 
             string CurrentSectionName = "";
-            string CurrentSectionParent = "";
+            HashSet<string> CurrentSectionParent = null;
 
             while (!SR.EndOfStream)
             {
                 string CurrentLine = SR.ReadLine();
 
-                //Get rid of comments
-                CurrentLine = Helpers.GetRegexMatch(CurrentLine, "^(?=;|//|$)|(^.+?(?=;|//|$))").Trim();                            //i.e. remove everything after and including ; and //
+                //Get rid of comments, ignore comments that are in quotes
+                bool bInQuotes = false;
+
+                for (int i = 0; i < CurrentLine.Length; i++)
+                {
+                    char CurrentChar = CurrentLine[i];
+
+                    if (CurrentChar == '"')
+                    {
+                        bInQuotes = !bInQuotes;
+                        continue;
+                    }
+
+                    if (bInQuotes)
+                    {
+                        continue;
+                    }
+
+                    switch (CurrentChar)
+                    {
+                        case '/':
+                            if (i >= CurrentLine.Length - 1 || CurrentLine[i+1] != '/')
+                            {
+                                continue;
+                            }
+
+                            goto case ';';
+                        case ';':
+                            CurrentLine = CurrentLine.Substring(0, i);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                CurrentLine = CurrentLine.Trim();
+
                 //Including other LTX file
                 if (Helpers.IsRegexMatching(CurrentLine, "^#include\\s+\".+\"$"))                                                   //i.e. is it in the form "#include "somefile.ltx""
                 {
@@ -188,7 +230,22 @@ namespace LTXDiff
                 if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]:\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
                 {
                     CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]:\\s]+(?=\\](:[^\\[\\]:]+)?$)");     //i.e. extract sector name
-                    CurrentSectionParent = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
+
+                    string CurrentSectionParentString = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
+
+                    if (CurrentSectionParentString.Length > 0)
+                    {
+                        CurrentSectionParent = new HashSet<string>();
+
+                        string[] ParentEntries = CurrentSectionParentString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+                        foreach (string Parent in ParentEntries)
+                        {
+                            CurrentSectionParent.Add(Parent.Trim());
+                        }
+                    }
+
+                    yield return new LTXData(CurrentSectionName, CurrentSectionParent, null, null, true);
 
                     continue;
                 }

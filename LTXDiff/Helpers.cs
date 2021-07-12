@@ -120,5 +120,32 @@ namespace LTXDiff
         {
             return new Regex(Pattern).Replace(Input, Replacement);
         }
+        public static bool AreSetsEqual<T>(HashSet<T> A, HashSet<T> B)
+        {
+            if (A == B)
+            {
+                return true;
+            }
+
+            if (A == null || B == null)
+            {
+                return false;
+            }
+
+            if (A.Count != B.Count)
+            {
+                return false;
+            }
+
+            foreach (T Element in A)
+            {
+                if (!B.Contains(Element))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }
