@@ -11,7 +11,6 @@ namespace LTXDiff
             LTXDB BaseDataBase = new LTXDB(RootFileName, BaseDir);
             LTXDB ModDataBase = new LTXDB(RootFileName, BaseDir, ModDir);
 
-
             foreach (string Section in ModDataBase.GetSections())
             {
                 bool bIsCurrentSectionListed = false;
@@ -56,17 +55,20 @@ namespace LTXDiff
 
                         if (bHasModifiedParents)
                         {
-                            foreach(string CurrentModParent in ModParents)
+                            if (ModParents != null)
                             {
-                                if (!BaseParents.Contains(CurrentModParent))
+                                foreach (string CurrentModParent in ModParents)
                                 {
-                                    OutputParents.Add(CurrentModParent);
+                                    if (!BaseParents.Contains(CurrentModParent))
+                                    {
+                                        OutputParents.Add(CurrentModParent);
+                                    }
                                 }
                             }
 
                             foreach (string CurrentBaseParent in BaseParents)
                             {
-                                if (!ModParents.Contains(CurrentBaseParent))
+                                if (ModParents == null || !ModParents.Contains(CurrentBaseParent))
                                 {
                                     OutputParents.Add("!" + CurrentBaseParent);
                                 }

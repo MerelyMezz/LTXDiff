@@ -146,7 +146,6 @@ namespace LTXDiff
 
         public static IEnumerable<LTXData> LTXDataFromFile(string Filename, bool bIgnoreIncludes = true, string BaseDir = null, string ModDir = null)
         {
-
             if (ModDir != null && BaseDir == null)
             {
                 throw new Exception();
@@ -238,10 +237,10 @@ namespace LTXDiff
 
                     string CurrentSectionParentString = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
 
+                    CurrentSectionParent = new HashSet<string>();
+
                     if (CurrentSectionParentString.Length > 0)
                     {
-                        CurrentSectionParent = new HashSet<string>();
-
                         string[] ParentEntries = CurrentSectionParentString.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
                         foreach (string Parent in ParentEntries)
@@ -277,7 +276,7 @@ namespace LTXDiff
                 }
 
                 //Key Value Pair with empty value
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+((\\s+)?=)?$"))                                              //i.e. is it in the form "some_variable =" or "some_variable"
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]]+((\\s+)?=)?$"))                                              //i.e. is it in the form "some_variable =" or "some_variable"
                 {
                     string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=((\\s+)?=)?$)");                               //i.e. extract variable name
 
