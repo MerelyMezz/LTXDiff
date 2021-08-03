@@ -92,7 +92,7 @@ namespace LTXDiff
                     {
                         PrintSectionHeader();
 
-                        Helpers.Print(CurrentModData.Key + " = " + CurrentModData.Value);
+                        Helpers.Print(CurrentModData.Key + (CurrentModData.Value != null ? " = " + CurrentModData.Value : ""));
                     }
                 }
 

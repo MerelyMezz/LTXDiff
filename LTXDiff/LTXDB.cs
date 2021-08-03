@@ -280,7 +280,7 @@ namespace LTXDiff
                 {
                     string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=((\\s+)?=)?$)");                               //i.e. extract variable name
 
-                    yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, "");
+                    yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, null);
 
                     continue;
                 }
