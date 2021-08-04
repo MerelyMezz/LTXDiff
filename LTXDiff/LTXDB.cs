@@ -231,6 +231,17 @@ namespace LTXDiff
                 }
 
                 //Defining new section
+
+                //Typo'd variant found in gamedata/configs/scripts/generators/smart/gen_smart_terrain_urod.ltx
+                //We correct the line so that it can be read as a normal section header
+                if (!Program.Options.IsFlagSet("no-typo-tolerance") && Helpers.IsRegexMatching(CurrentLine, "^\\[.*\\]\\[.*\\].*$"))
+                {
+                    string SectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\]]*(?=\\])");
+                    string PostSectionStuff = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[.*\\]\\[.*\\]).*");
+
+                    CurrentLine = "[" + SectionName + "]" + PostSectionStuff;
+                }
+
                 if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]:\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
                 {
                     CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]:\\s]+(?=\\](:[^\\[\\]:]+)?$)");     //i.e. extract sector name

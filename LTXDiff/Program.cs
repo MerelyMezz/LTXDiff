@@ -1,33 +1,177 @@
 ﻿using System;
-
+using System.Collections.Generic;
 using System.IO;
 
 namespace LTXDiff
 {
-    class ArgumentTracker
-    {
-        string[] args;
-        int CurrentArg = 0;
-
-        public ArgumentTracker(string[] args)
-        {
-            this.args = args;
-        }
-
-        public string GetNext()
-        {
-            if (args.Length <= CurrentArg)
-            {
-                Program.PrintManual();
-            }
-
-            CurrentArg++;
-            return args[CurrentArg - 1];
-        }
-    }
-
     class Program
     {
+        public class ArgumentTracker
+        {
+            string[] args;
+            int CurrentArg = 0;
+
+            public ArgumentTracker(string[] args)
+            {
+                this.args = args;
+            }
+
+            public bool HasNext()
+            {
+                return CurrentArg < args.Length;
+            }
+
+            public string GetNext()
+            {
+                if (args.Length <= CurrentArg)
+                {
+                    PrintManual();
+                }
+
+                CurrentArg++;
+                return args[CurrentArg - 1];
+            }
+        }
+
+        public enum RoutineType
+        {
+            Diff,
+            FindRoot,
+            DLTXify
+        }
+
+        public class OptionTracker
+        {
+            struct OptionData
+            {
+                public bool bIsStringValue;
+
+                public bool bFlagSet;
+                public string StringValue;
+
+                public HashSet<RoutineType> RoutineFilter;
+
+                public OptionData(RoutineType[] RoutineTypes, bool bIsStringValue)
+                {
+                    this.bIsStringValue = bIsStringValue;
+                    this.bFlagSet = false;
+                    this.StringValue = null;
+
+                    RoutineFilter = new HashSet<RoutineType>();
+
+                    foreach (RoutineType Type in RoutineTypes)
+                    {
+                        RoutineFilter.Add(Type);
+                    }
+                }
+            }
+
+            Dictionary<char, string> OptionAbbreviations = new Dictionary<char, string>();
+            Dictionary<string, OptionData> Options = new Dictionary<string, OptionData>();
+
+            public void AddOption(string OptionName, RoutineType[] RoutineTypes, bool bIsStringValue = false, char OptionChar = (char)0)
+            {
+                Options.Add(OptionName, new OptionData(RoutineTypes, bIsStringValue));
+
+                if (OptionChar != 0)
+                {
+                    OptionAbbreviations.Add(OptionChar, OptionName);
+                }
+            }
+
+            public void SetFlag(string OptionName)
+            {
+                if (!Options.ContainsKey(OptionName))
+                {
+                    PrintManual();
+                }
+
+                OptionData Data = Options[OptionName];
+
+                if (!Data.RoutineFilter.Contains(ExecutedRoutine))
+                {
+                    PrintManual();
+                }
+
+                Data.bFlagSet = true;
+                Options[OptionName] = Data;
+            }
+
+            public void SetStringValue(string OptionName, string Value)
+            {
+                if (!Options.ContainsKey(OptionName))
+                {
+                    PrintManual();
+                }
+
+                OptionData Data = Options[OptionName];
+
+                if (!Data.RoutineFilter.Contains(ExecutedRoutine))
+                {
+                    PrintManual();
+                }
+
+                Data.StringValue = Value;
+                Options[OptionName] = Data;
+            }
+
+            public bool IsFlagSet(string OptionName)
+            {
+                return Options[OptionName].bFlagSet;
+            }
+
+            public string GetStringValue(string OptionName)
+            {
+                return Options[OptionName].StringValue;
+            }
+
+            public void ProcessOptions(ArgumentTracker Tracker)
+            {
+                while (Tracker.HasNext())
+                {
+                    string CurrentOption = Tracker.GetNext();
+
+                    if (CurrentOption[0] != '-')
+                    {
+                        Program.PrintManual();
+                    }
+
+                    if (CurrentOption[1] == '-')
+                    {
+                        string OptionName = CurrentOption.Substring(2);
+
+                        if (!Options.ContainsKey(OptionName))
+                        {
+                            PrintManual();
+                        }
+
+                        if (Options[OptionName].bIsStringValue)
+                        {
+                            SetStringValue(OptionName, Tracker.GetNext());
+                        }
+                        else
+                        {
+                            SetFlag(OptionName);
+                        }
+                    }
+                    else
+                    {
+                        string OptionFlags = CurrentOption.Substring(1);
+
+                        foreach (char Flag in OptionFlags)
+                        {
+                            if (!OptionAbbreviations.ContainsKey(Flag))
+                            {
+                                PrintManual();
+                            }
+
+                            SetFlag(OptionAbbreviations[Flag]);
+                        }
+                    }
+                }
+            }
+        }
+
         public static void PrintManual()
         {
             string ProgramName = "LTXDiff";
@@ -60,9 +204,15 @@ namespace LTXDiff
             }
         }
 
+        static RoutineType ExecutedRoutine;
+        public static OptionTracker Options = new OptionTracker();
+
         static void Main(string[] args)
         {
             ArgumentTracker Args = new ArgumentTracker(args);
+
+            Options.AddOption("no-typo-tolerance", new RoutineType[]{ RoutineType.Diff, RoutineType.DLTXify }, false, 't');
+            Options.AddOption("force-overwrite", new RoutineType[]{ RoutineType.DLTXify }, false, 'f');
 
             string Command = Args.GetNext().ToLower();
 
@@ -71,9 +221,13 @@ namespace LTXDiff
             switch (Command)
             {
                 case "diff":
+                    ExecutedRoutine = RoutineType.Diff;
+
                     BaseDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     RootFileName = Path.GetFullPath(Args.GetNext(), BaseDir);
+
+                    Options.ProcessOptions(Args);
 
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
                                             VerifyValidPath(ModDir, false) &&
@@ -83,6 +237,8 @@ namespace LTXDiff
 
                     break;
                 case "findroot":
+                    ExecutedRoutine = RoutineType.FindRoot;
+
                     BaseDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     FileName = Helpers.GetRegexReplacement(Args.GetNext(), "^\\\\", "");
@@ -96,6 +252,8 @@ namespace LTXDiff
                         return;
                     }
 
+                    Options.ProcessOptions(Args);
+
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
                                             VerifyValidPath(ModDir, false));
 
@@ -104,6 +262,8 @@ namespace LTXDiff
                     break;
 
                 case "dltxify":
+                    ExecutedRoutine = RoutineType.DLTXify;
+
                     BaseDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     ModDir = Helpers.ParseCommandLinePath(Args.GetNext());
                     ModName = Args.GetNext();
@@ -115,6 +275,8 @@ namespace LTXDiff
                         Helpers.PrintC("Mod name may only contain letters, digits and underscores");
                         bIsModNameAppropriate = false;
                     }
+
+                    Options.ProcessOptions(Args);
 
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
                                             VerifyValidPath(ModDir, false) &&

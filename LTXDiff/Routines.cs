@@ -218,9 +218,10 @@ namespace LTXDiff
                 string ModFileDir = Path.GetFullPath(Path.GetDirectoryName(RootFileName), OutputModDir);
                 ModFileName = Path.GetFullPath(ModFileName, ModFileDir);
 
-                if (File.Exists(ModFileName))
+                if (File.Exists(ModFileName) && !Program.Options.IsFlagSet("force-overwrite"))
                 {
-                    throw new Exception();
+                    Helpers.PrintC("File '" + ModFileName + "' already exists.");
+                    Environment.Exit(1);
                 }
 
                 //TODO: add overwriting option to prevent accidental overwriting
