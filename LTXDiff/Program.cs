@@ -176,9 +176,18 @@ namespace LTXDiff
         {
             string ProgramName = "LTXDiff";
 
-            Helpers.PrintC(ProgramName + " diff [base directory] [mod directory] [relative path to root file]");
+            Helpers.PrintC(ProgramName + " diff [base directory] [mod directory] [relative path to root file] [options]");
+            Helpers.PrintC("Prints a list of differences between the base and the mod directory, formatted to be ready to be used by DLTX");
+            Helpers.PrintC("");
             Helpers.PrintC(ProgramName + " findroot [base directory] [mod directory] [relative path to file]");
-            Helpers.PrintC(ProgramName + " dltxify [base directory] [mod directory] [mod name]");
+            Helpers.PrintC("Determines the root ltx file that a given file belongs to");
+            Helpers.PrintC("");
+            Helpers.PrintC(ProgramName + " dltxify [base directory] [mod directory] [mod name] [options]");
+            Helpers.PrintC("Writes a fully usable DLTX-usable version of a mod");
+            Helpers.PrintC("");
+            Helpers.PrintC("Options:");
+            Helpers.PrintC("[dltxify] --force-overwrite, -f: If files that need to be written are already present, overwrite them without warning.");
+            Helpers.PrintC("[diff, dltxify] --no-typo-tolerance, -t: Typos in LTX files will not be corrected");
 
             Environment.Exit(1);
         }
