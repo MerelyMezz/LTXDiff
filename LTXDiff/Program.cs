@@ -266,7 +266,12 @@ namespace LTXDiff
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
                                             VerifyValidPath(ModDir, false));
 
-                    Helpers.Print(Routines.FindRootFile(BaseDir, ModDir, FileName));
+                    HashSet<string> RootFiles = Routines.FindRootFile(BaseDir, ModDir, FileName);
+
+                    foreach (string File in RootFiles)
+                    {
+                        Helpers.Print(File);
+                    }
 
                     break;
 

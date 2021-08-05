@@ -142,8 +142,10 @@ namespace LTXDiff
             }
         }
 
-        static public string FindRootFile(string BaseDir, string ModDir, string FileName)
+        static public HashSet<string> FindRootFile(string BaseDir, string ModDir, string FileName)
         {
+            HashSet<string> RootFiles = new HashSet<string>();
+
             string CurrentDirectory = Path.GetDirectoryName(FileName);
             
             while (true)
@@ -174,7 +176,7 @@ namespace LTXDiff
                             continue;
                         }
 
-                        return FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, CurrentFileName));
+                        RootFiles.UnionWith(FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, CurrentFileName)));
                     }
                 }
 
@@ -186,7 +188,12 @@ namespace LTXDiff
                 CurrentDirectory = Helpers.GetUpperDirectory(CurrentDirectory);
             }
 
-            return FileName;
+            if (RootFiles.Count == 0)
+            {
+                RootFiles.Add(FileName);
+            }
+
+            return RootFiles;
         }
 
         public static void DLTXify(string BaseDir, string ModDir, string ModName)
@@ -203,7 +210,7 @@ namespace LTXDiff
                     continue;
                 }
 
-                AllRootFiles.Add(FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, FileName)));
+                AllRootFiles.UnionWith(FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, FileName)));
             }
 
             TextWriter OldConsole = Console.Out;
