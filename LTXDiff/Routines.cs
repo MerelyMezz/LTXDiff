@@ -198,26 +198,45 @@ namespace LTXDiff
 
         public static void DLTXify(string BaseDir, string ModDir, string ModName)
         {
+            bool bCopyNonLTX = Program.Options.IsFlagSet("copy-all");
+            bool bForceOverwrite = Program.Options.IsFlagSet("force-overwrite");
+
             //Associate all mod files with a root file
             string[] AllModFiles = Directory.GetFiles(ModDir, "*", SearchOption.AllDirectories);
+
+            string ModDirUpper = Path.Combine(ModDir, "..");
+            string ModDirName = Path.GetRelativePath(ModDirUpper, ModDir);
+            string OutputModDir = Path.GetFullPath(ModDirName + "_DLTX", ModDirUpper);
 
             HashSet<string> AllRootFiles = new HashSet<string>();
 
             foreach (string FileName in AllModFiles)
             {
+                string RelativeFileName = Helpers.GetRelativePath(BaseDir, ModDir, FileName);
+
                 if (Path.GetExtension(FileName) != ".ltx")
                 {
+                    if (bCopyNonLTX)
+                    {
+                        string FileDestination = Path.GetFullPath(RelativeFileName, OutputModDir);
+
+                        if (File.Exists(FileDestination) && !bForceOverwrite)
+                        {
+                            Helpers.PrintC("File '" + FileDestination + "' already exists.");
+                            Environment.Exit(1);
+                        }
+
+                        Directory.CreateDirectory(Path.GetDirectoryName(FileDestination));
+                        File.Copy(FileName, FileDestination, true);
+                    }
+
                     continue;
                 }
 
-                AllRootFiles.UnionWith(FindRootFile(BaseDir, ModDir, Helpers.GetRelativePath(BaseDir, ModDir, FileName)));
+                AllRootFiles.UnionWith(FindRootFile(BaseDir, ModDir, RelativeFileName));
             }
 
             TextWriter OldConsole = Console.Out;
-
-            string ModDirUpper = Path.Combine(ModDir, "..");
-            string ModDirName = Path.GetRelativePath(ModDirUpper, ModDir);
-            string OutputModDir = Path.GetFullPath(ModDirName + "_DLTX", ModDirUpper);
 
             foreach (string RootFileName in AllRootFiles)
             {
@@ -228,7 +247,7 @@ namespace LTXDiff
                 string ModFileDir = Path.GetFullPath(Path.GetDirectoryName(RootFileName), OutputModDir);
                 ModFileName = Path.GetFullPath(ModFileName, ModFileDir);
 
-                if (File.Exists(ModFileName) && !Program.Options.IsFlagSet("force-overwrite"))
+                if (File.Exists(ModFileName) && !bForceOverwrite)
                 {
                     Helpers.PrintC("File '" + ModFileName + "' already exists.");
                     Environment.Exit(1);

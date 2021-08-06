@@ -187,6 +187,7 @@ namespace LTXDiff
             Helpers.PrintC("");
             Helpers.PrintC("Options:");
             Helpers.PrintC("[dltxify] --force-overwrite, -f: If files that need to be written are already present, overwrite them without warning.");
+            Helpers.PrintC("[dltxify] --copy-all, -c: Copies Non-LTX files into the output mod folder aswell.");
             Helpers.PrintC("[diff, dltxify] --no-typo-tolerance, -t: Typos in LTX files will not be corrected");
 
             Environment.Exit(1);
@@ -234,6 +235,7 @@ namespace LTXDiff
 
             Options.AddOption("no-typo-tolerance", new RoutineType[]{ RoutineType.Diff, RoutineType.DLTXify }, false, 't');
             Options.AddOption("force-overwrite", new RoutineType[]{ RoutineType.DLTXify }, false, 'f');
+            Options.AddOption("copy-all", new RoutineType[] { RoutineType.DLTXify }, false, 'c');
 
             string Command = Args.GetNext().ToLower();
 
