@@ -221,7 +221,10 @@ namespace LTXDiff
 
             foreach (string RootFileName in AllRootFiles)
             {
-                string ModFileName = "mod_" + Path.GetFileNameWithoutExtension(RootFileName) + "_" + ModName + ".ltx";
+                bool bBaseRootFileExists = File.Exists(Path.GetFullPath(RootFileName, BaseDir));
+                string PureFileName = Path.GetFileNameWithoutExtension(RootFileName);
+
+                string ModFileName = (bBaseRootFileExists ? "mod_" + PureFileName + "_" + ModName : PureFileName)  + ".ltx";
                 string ModFileDir = Path.GetFullPath(Path.GetDirectoryName(RootFileName), OutputModDir);
                 ModFileName = Path.GetFullPath(ModFileName, ModFileDir);
 
