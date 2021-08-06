@@ -59,11 +59,6 @@ namespace LTXDiff
                 throw new Exception();
             }
 
-            if (!File.Exists(RootFilePath))
-            {
-                return;
-            }
-
             IEnumerable<LTXData> FileData = LTXDataFromFile(RootFilePath, false, BaseDir, ModDir);
 
             foreach (LTXData Data in FileData)
@@ -154,6 +149,12 @@ namespace LTXDiff
             BaseDir = BaseDir == null ? Path.GetDirectoryName(Filename) : BaseDir;
 
             Filename = Helpers.FindFileFromMod(Filename, BaseDir, ModDir);
+
+            if (Filename == null)
+            {
+                yield break;
+            }
+
             string FileDir = Helpers.GetRelativePath(BaseDir, ModDir, Path.GetDirectoryName(Filename));
 
             if (Path.GetExtension(Filename) != ".ltx" || !File.Exists(Filename))

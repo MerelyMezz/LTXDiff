@@ -205,6 +205,18 @@ namespace LTXDiff
             return true;
         }
 
+        static bool VerifyValidPathInBothFolders(string FilePath, string BaseDir, string ModDir)
+        {
+            bool bFileExists = Helpers.FindFileFromMod(FilePath, BaseDir, ModDir) != null;
+
+            if (!bFileExists)
+            {
+                Helpers.PrintC(Helpers.GetRelativePath(BaseDir, ModDir, FilePath) + " doesn't exist.");
+            }
+
+            return bFileExists;
+        }
+
         static void ContinueExecutionIfTrue(bool bContinue)
         {
             if (!bContinue)
@@ -240,7 +252,7 @@ namespace LTXDiff
 
                     ContinueExecutionIfTrue(VerifyValidPath(BaseDir, false) &&
                                             VerifyValidPath(ModDir, false) &&
-                                            VerifyValidPath(RootFileName, true));
+                                            VerifyValidPathInBothFolders(RootFileName, BaseDir, ModDir));
 
                     Routines.MakeDiffFromMod(BaseDir, ModDir, RootFileName);
 

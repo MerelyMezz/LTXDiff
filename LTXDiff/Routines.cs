@@ -231,7 +231,6 @@ namespace LTXDiff
                     Environment.Exit(1);
                 }
 
-                //TODO: add overwriting option to prevent accidental overwriting
                 Directory.CreateDirectory(ModFileDir);
                 StreamWriter SW = new StreamWriter(File.OpenWrite(ModFileName));
                 Console.SetOut(SW);

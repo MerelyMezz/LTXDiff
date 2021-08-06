@@ -54,6 +54,11 @@ namespace LTXDiff
         {
             HashSet<string> MatchingFiles = GetFileNamesFromDirs(Path.GetDirectoryName(GetRelativePath(BaseDir, ModDir, FileName)), Path.GetFileName(FileName), BaseDir, ModDir);
 
+            if (MatchingFiles.Count == 0)
+            {
+                return null;
+            }
+
             if (MatchingFiles.Count != 1)
             {
                 throw new Exception();
