@@ -146,6 +146,8 @@ namespace LTXDiff
                 throw new Exception();
             }
 
+            bool bNoTypoTolerance = Program.Options.IsFlagSet("no-typo-tolerance");
+
             BaseDir = BaseDir == null ? Path.GetDirectoryName(Filename) : BaseDir;
 
             Filename = Helpers.FindFileFromMod(Filename, BaseDir, ModDir);
@@ -163,6 +165,7 @@ namespace LTXDiff
             }
 
             StreamReader SR = new StreamReader(File.OpenRead(Filename));
+            int CurrentLineCount = 0;
 
             string CurrentSectionName = "";
             HashSet<string> CurrentSectionParent = null;
@@ -170,6 +173,7 @@ namespace LTXDiff
             while (!SR.EndOfStream)
             {
                 string CurrentLine = SR.ReadLine();
+                CurrentLineCount++;
 
                 //Get rid of comments, ignore comments that are in quotes
                 bool bInQuotes = false;
@@ -235,7 +239,7 @@ namespace LTXDiff
 
                 //Typo'd variant found in gamedata/configs/scripts/generators/smart/gen_smart_terrain_urod.ltx
                 //We correct the line so that it can be read as a normal section header
-                if (!Program.Options.IsFlagSet("no-typo-tolerance") && Helpers.IsRegexMatching(CurrentLine, "^\\[.*\\]\\[.*\\].*$"))
+                if (!bNoTypoTolerance && Helpers.IsRegexMatching(CurrentLine, "^\\[.*\\]\\[.*\\].*$"))
                 {
                     string SectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\]]*(?=\\])");
                     string PostSectionStuff = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[.*\\]\\[.*\\]).*");
@@ -243,11 +247,11 @@ namespace LTXDiff
                     CurrentLine = "[" + SectionName + "]" + PostSectionStuff;
                 }
 
-                if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]:\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
+                if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
                 {
-                    CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]:\\s]+(?=\\](:[^\\[\\]:]+)?$)");     //i.e. extract sector name
+                    CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]\\s]+(?=\\](:[^\\[\\]:]+)?$)");     //i.e. extract sector name
 
-                    string CurrentSectionParentString = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]:\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
+                    string CurrentSectionParentString = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
 
                     CurrentSectionParent = new HashSet<string>();
 
@@ -297,6 +301,29 @@ namespace LTXDiff
                     continue;
                 }
 
+                //Prevent crashes for typos that exist in vanilla ltx files
+                string[] TyposToIgnore = new string[] { "']]" };
+
+                if (!bNoTypoTolerance)
+                {
+                    bool bSkipTypo = false;
+
+                    foreach (string Typo in TyposToIgnore)
+                    {
+                        if (CurrentLine == Typo)
+                        {
+                            bSkipTypo = true;
+                            break;
+                        }
+                    }
+
+                    if (bSkipTypo)
+                    {
+                        continue;
+                    }
+                }
+
+
                 //TODO: make all this regex stuff easier to read and maintain somehow
 
                 //TODO: multiline variable values surrounded by quotes
@@ -309,7 +336,8 @@ namespace LTXDiff
                     continue;
                 }
 
-                throw new Exception();
+                Helpers.PrintC("Couldn't parse line \"" + CurrentLine + "\" in file \"" + Filename + "\" at line " + CurrentLineCount);
+                Environment.Exit(1);
             }
         }
     }
