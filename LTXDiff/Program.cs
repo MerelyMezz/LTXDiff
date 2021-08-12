@@ -186,6 +186,9 @@ namespace LTXDiff
             Helpers.PrintC(ProgramName + " dltxify [base directory] [mod directory] [mod name] [options]");
             Helpers.PrintC("Writes a fully usable DLTX-usable version of a mod");
             Helpers.PrintC("");
+            Helpers.PrintC(ProgramName + " parse [directory] [options]");
+            Helpers.PrintC("Checks the formatting of every LTX file in the directory and prints errors when mistakes are found");
+            Helpers.PrintC("");
             Helpers.PrintC("Options:");
             Helpers.PrintC("[dltxify] --force-overwrite, -f: If files that need to be written are already present, overwrite them without warning.");
             Helpers.PrintC("[dltxify] --copy-all, -c: Copies Non-LTX files into the output mod folder aswell.");
