@@ -237,14 +237,31 @@ namespace LTXDiff
 
                 //Defining new section
 
-                //Typo'd variant found in gamedata/configs/scripts/generators/smart/gen_smart_terrain_urod.ltx
-                //We correct the line so that it can be read as a normal section header
-                if (!bNoTypoTolerance && Helpers.IsRegexMatching(CurrentLine, "^\\[.*\\]\\[.*\\].*$"))
+                if (!bNoTypoTolerance)
                 {
-                    string SectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\]]*(?=\\])");
-                    string PostSectionStuff = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[.*\\]\\[.*\\]).*");
+                    //Typo'd variant found in configs/scripts/generators/smart/gen_smart_terrain_urod.ltx
+                    //"[smart_terrain][smart_terrain]"
+                    if (Helpers.IsRegexMatching(CurrentLine, "^\\[.*\\]\\[.*\\].*$"))
+                    {
+                        string SectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\]]*(?=\\])");
+                        string PostSectionStuff = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[.*\\]\\[.*\\]).*");
 
-                    CurrentLine = "[" + SectionName + "]" + PostSectionStuff;
+                        CurrentLine = "[" + SectionName + "]" + PostSectionStuff;
+                    }
+
+                    //Typo'd variant found in configs/environment/weathers/w_indoor_ambient.ltx
+                    //"indoor_underground[00:00:00]"
+                    if (Helpers.IsRegexMatching(CurrentLine, "^[^\\s\\[\\]]+\\[[^\\[\\]]+\\]$"))
+                    {
+                        CurrentLine = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\s\\[\\]]+)\\[[^\\[\\]]+\\]$");
+                    }
+
+                    //Typo'd variant found in configs/gameplay/loadouts/army_base.ltx
+                    //"[equipment_base] \n"
+                    if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]\\s]+\\][^:].*$"))
+                    {
+                        CurrentLine = Helpers.GetRegexMatch(CurrentLine, "^\\[[^\\[\\]\\s]+\\](?=[^:].*$)");
+                    }
                 }
 
                 if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
@@ -302,7 +319,7 @@ namespace LTXDiff
                 }
 
                 //Prevent crashes for typos that exist in vanilla ltx files
-                string[] TyposToIgnore = new string[] { "']]" };
+                string[] TyposToIgnore = new string[] { "']]", "--[[" };
 
                 if (!bNoTypoTolerance)
                 {
@@ -337,7 +354,11 @@ namespace LTXDiff
                 }
 
                 Helpers.PrintC("Couldn't parse line \"" + CurrentLine + "\" in file \"" + Filename + "\" at line " + CurrentLineCount);
-                Environment.Exit(1);
+
+                if (Program.ExecutedRoutine != Program.RoutineType.Parse)
+                {
+                    Environment.Exit(1);
+                }
             }
         }
     }

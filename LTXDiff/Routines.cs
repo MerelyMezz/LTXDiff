@@ -264,5 +264,18 @@ namespace LTXDiff
                 SW.Close();
             }
         }
+
+        public static void Parse(string Dir)
+        {
+            string[] AllFiles = Directory.GetFiles(Dir, "*", SearchOption.AllDirectories);
+
+            foreach (string File in AllFiles)
+            {
+                foreach (LTXData DummyData in LTXDB.LTXDataFromFile(File, true, Dir))
+                {
+
+                }
+            }
+        }
     }
 }

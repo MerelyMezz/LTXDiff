@@ -37,7 +37,8 @@ namespace LTXDiff
         {
             Diff,
             FindRoot,
-            DLTXify
+            DLTXify,
+            Parse
         }
 
         public class OptionTracker
@@ -188,7 +189,7 @@ namespace LTXDiff
             Helpers.PrintC("Options:");
             Helpers.PrintC("[dltxify] --force-overwrite, -f: If files that need to be written are already present, overwrite them without warning.");
             Helpers.PrintC("[dltxify] --copy-all, -c: Copies Non-LTX files into the output mod folder aswell.");
-            Helpers.PrintC("[diff, dltxify] --no-typo-tolerance, -t: Typos in LTX files will not be corrected");
+            Helpers.PrintC("[diff, dltxify, parse] --no-typo-tolerance, -t: Typos in LTX files will not be corrected");
 
             Environment.Exit(1);
         }
@@ -226,14 +227,14 @@ namespace LTXDiff
             }
         }
 
-        static RoutineType ExecutedRoutine;
+        public static RoutineType ExecutedRoutine;
         public static OptionTracker Options = new OptionTracker();
 
         static void Main(string[] args)
         {
             ArgumentTracker Args = new ArgumentTracker(args);
 
-            Options.AddOption("no-typo-tolerance", new RoutineType[]{ RoutineType.Diff, RoutineType.DLTXify }, false, 't');
+            Options.AddOption("no-typo-tolerance", new RoutineType[]{ RoutineType.Diff, RoutineType.DLTXify, RoutineType.Parse }, false, 't');
             Options.AddOption("force-overwrite", new RoutineType[]{ RoutineType.DLTXify }, false, 'f');
             Options.AddOption("copy-all", new RoutineType[] { RoutineType.DLTXify }, false, 'c');
 
@@ -312,6 +313,17 @@ namespace LTXDiff
 
                     Routines.DLTXify(BaseDir, ModDir, ModName);
 
+                    break;
+                case "parse":
+                    ExecutedRoutine = RoutineType.Parse;
+
+                    string Dir = Helpers.ParseCommandLinePath(Args.GetNext());
+
+                    Options.ProcessOptions(Args);
+
+                    ContinueExecutionIfTrue(VerifyValidPath(Dir, false));
+
+                    Routines.Parse(Dir);
                     break;
                 default:
                     PrintManual();
