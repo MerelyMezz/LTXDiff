@@ -11,3 +11,6 @@ Trace back include tree to find out which LTX file originally included the speci
 LTXDiff dltxify [base directory] [mod directory] [mod name]
 
 Applies diff on an entire mod directory automatically and saving a fully deployable version of the mod in "[mod directory]_DLTX".
+
+LTXDiff parse [directory] [options]
+Checks the formatting of every LTX file in the directory and prints errors when mistakes are found
