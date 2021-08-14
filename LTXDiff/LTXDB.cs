@@ -266,9 +266,9 @@ namespace LTXDiff
 
                 if (Helpers.IsRegexMatching(CurrentLine, "^\\[[^\\[\\]\\s]+\\](:[^\\[\\]:]+)?$"))                                 //i.e. is it in the form "[some_section]:some_parent"
                 {
-                    CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]\\s]+(?=\\](:[^\\[\\]:]+)?$)");     //i.e. extract sector name
+                    CurrentSectionName = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[)[^\\[\\]\\s]+(?=\\](:[^\\[\\]:]+)?$)").ToLowerInvariant();     //i.e. extract sector name
 
-                    string CurrentSectionParentString = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]\\s]+\\]:)[^\\[\\]:]+$");          //i.e. extract parent name
+                    string CurrentSectionParentString = Helpers.GetRegexMatch(CurrentLine, "(?<=^\\[[^\\[\\]\\s]+\\]:)[^\\[\\]:]+$").ToLowerInvariant();          //i.e. extract parent name
 
                     CurrentSectionParent = new HashSet<string>();
 
@@ -288,20 +288,20 @@ namespace LTXDiff
                 }
 
                 //Key Value Pair
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+(\\s+)?=(\\s+)?[^\"]+$"))                                    //i.e. is it in the form "some_variable = some_value"
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\"[^\"]*\"$"))                              //i.e. is it in the form "some_variable = "some_value""
                 {
-                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=(\\s+)?=(\\s+)?.+$)");                         //i.e. extract variable name
-                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:]+(\\s+)?=(\\s+)?).+$");                      //i.e. extract variable value
+                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:\"]+[^\\s](?=(\\s+)?=(\\s+)?\"[^\"]*\"$)");         // i.e. extract variable name
+                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\")[^\"]*(?=\"$)");        // i.e. extract variable value
 
                     yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, Value);
 
                     continue;
                 }
 
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\"[^\"]+\"$"))                              //i.e. is it in the form "some_variable = "some_value""
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+(\\s+)?=\\s*[^\\s].*$"))                                    //i.e. is it in the form "some_variable = some_value"
                 {
-                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:\"]+[^\\s](?=(\\s+)?=(\\s+)?\"[^\"]+\"$)");         // i.e. extract variable name
-                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\")[^\"]+(?=\"$)");        // i.e. extract variable value
+                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=(\\s+)?=\\s*[^\\s].*$)");                         //i.e. extract variable name
+                    string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:]+\\s*=)\\s*[^\\s].*$");                      //i.e. extract variable value
 
                     yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, Value);
 
@@ -309,9 +309,18 @@ namespace LTXDiff
                 }
 
                 //Key Value Pair with empty value
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]]+((\\s+)?=)?$"))                                              //i.e. is it in the form "some_variable =" or "some_variable"
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]=]+\\s*=\\s*$"))                                              //i.e. is it in the form "some_variable ="
                 {
-                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=((\\s+)?=)?$)");                               //i.e. extract variable name
+                    string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]=]+(?=\\s*=\\s*$)");                               //i.e. extract variable name
+
+                    yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, "");
+
+                    continue;
+                }
+
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]=]+\\s*$"))                                                   //i.e. is it in the form "some_variable"
+                {
+                    string Key = CurrentLine.Trim();                                                                             //i.e. extract variable name
 
                     yield return new LTXData(CurrentSectionName, CurrentSectionParent, Key, null);
 
