@@ -288,7 +288,7 @@ namespace LTXDiff
                 }
 
                 //Key Value Pair
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\"[^\"]*\"$"))                              //i.e. is it in the form "some_variable = "some_value""
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]\"]+(\\s+)?=(\\s+)?\"[^\"]*\"$"))                              //i.e. is it in the form "some_variable = "some_value""
                 {
                     string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:\"]+[^\\s](?=(\\s+)?=(\\s+)?\"[^\"]*\"$)");         // i.e. extract variable name
                     string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:\"]+(\\s+)?=(\\s+)?\")[^\"]*(?=\"$)");        // i.e. extract variable value
@@ -298,7 +298,7 @@ namespace LTXDiff
                     continue;
                 }
 
-                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]:]+(\\s+)?=\\s*[^\\s].*$"))                                    //i.e. is it in the form "some_variable = some_value"
+                if (Helpers.IsRegexMatching(CurrentLine, "^[^\\[\\]]+(\\s+)?=\\s*[^\\s].*$"))                                    //i.e. is it in the form "some_variable = some_value"
                 {
                     string Key = Helpers.GetRegexMatch(CurrentLine, "^[^\\[\\]:]+(?=(\\s+)?=\\s*[^\\s].*$)");                         //i.e. extract variable name
                     string Value = Helpers.GetRegexMatch(CurrentLine, "(?<=^[^\\[\\]:]+\\s*=)\\s*[^\\s].*$");                      //i.e. extract variable value
